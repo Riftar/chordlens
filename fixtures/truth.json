@@ -1,0 +1,37 @@
+[
+ {
+  "start": 2.0,
+  "end": 4.0,
+  "chord": "Cmaj"
+ },
+ {
+  "start": 4.0,
+  "end": 6.0,
+  "chord": "Gmaj"
+ },
+ {
+  "start": 6.0,
+  "end": 8.0,
+  "chord": "Amin"
+ },
+ {
+  "start": 8.0,
+  "end": 10.0,
+  "chord": "Fmaj"
+ },
+ {
+  "start": 10.0,
+  "end": 12.0,
+  "chord": "Emin7"
+ },
+ {
+  "start": 12.0,
+  "end": 14.0,
+  "chord": "A#7"
+ },
+ {
+  "start": 14.0,
+  "end": 16.0,
+  "chord": "Cmaj"
+ }
+]

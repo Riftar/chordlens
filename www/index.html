@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chordlens — read the chords in any recording</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* two warm blooms, fixed, quiet — the atmospheric ground */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1;
+    background:
+      radial-gradient(38rem 26rem at 18% 8%, oklch(26% 0.055 50 / 0.55), transparent 70%),
+      radial-gradient(34rem 24rem at 85% 90%, oklch(24% 0.045 30 / 0.45), transparent 70%);
+  }
+  * { box-sizing: border-box; }
+  html, body { overflow-x: clip; }
+  body {
+    margin: 0; background: var(--color-paper); color: var(--color-ink);
+    font-family: var(--font-mono); font-size: var(--text-base); line-height: 1.6;
+    font-variant-numeric: tabular-nums;
+  }
+  ::selection { background: var(--color-accent); color: var(--color-paper); }
+
+  a { color: var(--color-accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible, label:focus-visible, input:focus-visible {
+    outline: 2px solid var(--color-focus); outline-offset: 3px;
+  }
+
+  /* N9 edge-aligned minimal nav */
+  .nav {
+    position: sticky; top: 0; z-index: var(--z-nav);
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: var(--space-md) var(--space-lg);
+    background: oklch(14% 0.008 40 / 0.85); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .wordmark { font-weight: 700; letter-spacing: -0.02em; }
+  .wordmark::before {
+    content: ""; display: inline-block; width: 0.55em; height: 0.55em;
+    background: var(--color-accent); margin-right: 0.55em; transform: translateY(-0.05em);
+  }
+  .nav-meta { color: var(--color-muted); font-size: var(--text-sm); white-space: nowrap; }
+
+  .wrap { max-width: 62rem; margin: 0 auto; padding: 0 var(--space-lg); }
+
+  /* hero — left-biased, the tool follows immediately (workbench) */
+  .hero { padding: var(--space-2xl) 0 var(--space-lg); }
+  .hero h1 {
+    font-size: var(--text-display); font-weight: 700; line-height: 1.05;
+    letter-spacing: -0.03em; margin: 0 0 var(--space-md);
+    max-width: 18ch; overflow-wrap: anywhere; min-width: 0;
+  }
+  .hero p { color: var(--color-muted); max-width: 58ch; margin: 0; }
+  .hero p b { color: var(--color-ink); font-weight: 400; }
+
+  /* the workbench: dropzone + result live in one elevated panel */
+  .bench {
+    background: var(--color-paper-2); border-radius: var(--radius);
+    padding: var(--space-lg); margin: var(--space-lg) 0 var(--space-2xl);
+    display: grid; gap: var(--space-lg);
+  }
+  .drop {
+    position: relative; border: 1px dashed var(--color-rule); border-radius: var(--radius);
+    padding: var(--space-2xl) var(--space-lg); text-align: center;
+    transition: border-color var(--dur-short) var(--ease-out),
+                background-color var(--dur-short) var(--ease-out);
+  }
+  .drop:hover, .drop:focus-within { border-color: var(--color-neutral); }
+  .drop.drag { border-color: var(--color-accent); background: oklch(72% 0.17 48 / 0.06); }
+  .drop.err { border-color: var(--color-accent); }
+  .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .drop .hint { color: var(--color-muted); font-size: var(--text-sm); margin-top: var(--space-sm); }
+  .pick {
+    display: inline-block; background: var(--color-paper-3); color: var(--color-ink);
+    border-radius: var(--radius-pill); padding: var(--space-sm) var(--space-lg);
+    font-size: var(--text-sm); transition: transform 100ms var(--ease-out),
+      background-color var(--dur-short) var(--ease-out);
+  }
+  .drop:hover .pick { background: oklch(25% 0.014 40); }
+  .drop.drag .pick { transform: translateY(-1.5px); }
+  .status { font-size: var(--text-sm); color: var(--color-muted); min-height: 1.6em; margin: 0; }
+  .status.error { color: var(--color-accent); }
+  .status .bar { display: inline-block; animation: pulse 1.2s var(--ease-in-out) infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .result { display: grid; gap: var(--space-md); }
+  .result[hidden] { display: none; }
+  .transport { display: flex; align-items: center; gap: var(--space-md); }
+  .transport button {
+    font-family: inherit; font-size: var(--text-sm); color: var(--color-ink);
+    background: var(--color-paper-3); border: 0; border-radius: var(--radius-pill);
+    padding: var(--space-sm) var(--space-lg); cursor: pointer; white-space: nowrap;
+    transition: background-color var(--dur-short) var(--ease-out), transform 100ms var(--ease-out);
+  }
+  .transport button:hover { background: oklch(25% 0.014 40); }
+  .transport button:active { transform: translateY(1px); }
+  .clock { color: var(--color-muted); font-size: var(--text-sm); white-space: nowrap; }
+
+  .timeline {
+    display: flex; gap: 2px; height: 4.5rem; border-radius: var(--radius);
+    overflow: hidden; position: relative; cursor: pointer;
+  }
+  .seg {
+    background: var(--color-paper-3); display: flex; align-items: center; justify-content: center;
+    font-size: var(--text-sm); color: var(--color-ink); white-space: nowrap;
+    overflow: hidden; min-width: 0; transition: background-color var(--dur-short) var(--ease-out);
+  }
+  .seg:hover { background: oklch(26% 0.02 45); }
+  .seg.now { background: oklch(30% 0.05 48); box-shadow: inset 0 -3px 0 var(--color-accent); }
+  .playhead {
+    position: absolute; top: 0; bottom: 0; width: 2px; background: var(--color-accent);
+    pointer-events: none;
+  }
+
+  .chroma-block { border: 1px solid var(--color-rule); border-radius: var(--radius); overflow: hidden; }
+  .chroma-flex { display: flex; }
+  .notes {
+    flex: 0 0 auto; padding: var(--space-xs) var(--space-sm); color: var(--color-muted);
+    font-size: var(--text-xs); display: grid; align-content: space-around; gap: 1px;
+  }
+  .notes span { line-height: 1; }
+  #chroma { display: block; width: 100%; height: 9rem; }
+
+  .summary { color: var(--color-muted); font-size: var(--text-sm); margin: 0; }
+  .summary b { color: var(--color-ink); font-weight: 400; }
+
+  /* Ft5 statement footer */
+  footer {
+    border-top: 1px solid var(--color-rule); margin-top: var(--space-xl);
+    padding: var(--space-xl) 0 var(--space-2xl);
+  }
+  footer .say { font-size: var(--text-md); font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  footer .fine { color: var(--color-muted); font-size: var(--text-sm); margin: var(--space-sm) 0 0; }
+
+  /* one orchestrated entrance, reduced-motion safe */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero, .bench { animation: rise 450ms var(--ease-out) both; }
+    .bench { animation-delay: 90ms; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .status .bar { animation: none; }
+  }
+  @media (max-width: 640px) {
+    .hero h1 { max-width: 100%; }
+    .timeline { height: 3.5rem; font-size: var(--text-xs); }
+    .nav { padding: var(--space-md); }
+    .wrap { padding: 0 var(--space-md); }
+  }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="wordmark">chordlens</span>
+  <span class="nav-meta">v0.1 · offline · zero dependencies</span>
+</nav>
+
+<div class="wrap">
+  <section class="hero">
+    <h1>Drop a song. Read its chords.</h1>
+    <p>A Fourier transform folds your audio into twelve pitch buckets, and the
+    closest chord shape wins. It runs on this machine — <b>no cloud, no model,
+    no upload beyond localhost</b>. Clean recordings read near-perfectly; dense
+    mixes keep their roots longer than their qualities.</p>
+  </section>
+
+  <section class="bench" aria-label="chord analysis">
+    <div class="drop" id="drop">
+      <span class="pick">Choose a WAV</span>
+      <div class="hint">or drop it here — 16-bit PCM, up to 32&nbsp;MB · <a href="/fixtures/clean.wav" id="demo">run the demo loop instead</a></div>
+      <input type="file" id="file" accept=".wav,audio/wav" aria-label="Choose a WAV file">
+    </div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+
+    <div class="result" id="result" hidden>
+      <div class="transport">
+        <button id="play" type="button">Play</button>
+        <span class="clock" id="clock">0:00 / 0:00</span>
+      </div>
+      <div class="timeline" id="timeline" aria-label="chord timeline"></div>
+      <div class="chroma-block">
+        <div class="chroma-flex">
+          <div class="notes" id="notes"></div>
+          <canvas id="chroma" height="144" aria-label="chromagram heatmap"></canvas>
+        </div>
+      </div>
+      <p class="summary" id="summary"></p>
+    </div>
+    <audio id="audio" preload="auto"></audio>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p class="say">The transform is local. The ears stay yours.</p>
+    <p class="fine">MIT license · Python stdlib only · FFT, chroma, and chord templates in one file</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const drop = $("drop"), file = $("file"), statusEl = $("status"),
+        result = $("result"), audio = $("audio"), timeline = $("timeline"),
+        canvas = $("chroma"), playBtn = $("play"), clockEl = $("clock"),
+        summary = $("summary"), notes = $("notes");
+  const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  NOTES.forEach(n => notes.appendChild(Object.assign(document.createElement("span"), {textContent: n})));
+  const state = { data: null, duration: 0, raf: 0 };
+
+  const fmt = (s) => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+  const say = (msg, isErr) => {
+    statusEl.textContent = msg; statusEl.className = "status" + (isErr ? " error" : "");
+    drop.classList.toggle("err", !!isErr);
+  };
+
+  function analyze(buffer, name, forPlayback) {
+    if (forPlayback) {
+      if (audio.src.startsWith("blob:")) URL.revokeObjectURL(audio.src);
+      audio.src = URL.createObjectURL(new Blob([buffer], {type: "audio/wav"}));
+    }
+    say(`Analyzing ${name} … working`);
+    fetch("/api/analyze", {method: "POST", body: buffer})
+      .then(r => r.json().then(body => ({ok: r.ok, status: r.status, body})))
+      .then(({ok, status, body}) => {
+        if (!ok) throw new Error(body.error || `HTTP ${status}`);
+        state.data = body;
+        render(body);
+        say(`${name} — done. ${body.segments.length} chords found.`);
+      })
+      .catch(err => say(`${name}: ${err.message} — convert to 16-bit WAV first (ffmpeg -i song.mp3 song.wav)`, true));
+  }
+
+  function loadFile(f) {
+    if (!f) return;
+    if (!/wav$/i.test(f.name) && f.type !== "audio/wav") {
+      say(`${f.name}: not a WAV — convert first (ffmpeg -i song.mp3 song.wav)`, true);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => analyze(reader.result, f.name, true);
+    reader.readAsArrayBuffer(f);
+  }
+
+  function demo() {
+    fetch("/fixtures/clean.wav")
+      .then(r => { if (!r.ok) throw new Error("demo unavailable"); return r.arrayBuffer(); })
+      .then(buf => analyze(buf, "demo loop (fixtures/clean.wav)", true))
+      .catch(err => say(err.message, true));
+  }
+
+  function render(body) {
+    result.hidden = false;
+    state.duration = body.frames.length ? body.frames[body.frames.length-1].t + 0.4 : 0;
+    timeline.innerHTML = "";
+    const total = state.duration || 1;
+    body.segments.forEach(seg => {
+      const el = document.createElement("div");
+      el.className = "seg"; el.textContent = seg.chord;
+      el.style.flexGrow = String(Math.max(seg.end - seg.start, 0.25));
+      el.title = `${seg.chord} · ${seg.start.toFixed(1)}s → ${seg.end.toFixed(1)}s`;
+      el.addEventListener("click", () => { audio.currentTime = seg.start + 0.01; });
+      timeline.appendChild(el);
+    });
+    const head = document.createElement("div");
+    head.className = "playhead"; timeline.appendChild(head);
+    drawChroma(body.frames);
+    summary.innerHTML = `<b>${body.segments.length} chords</b> over ${fmt(total)} — brightness = pitch-class energy per frame`;
+    paintHead();
+  }
+
+  function drawChroma(frames) {
+    const w = Math.max(canvas.clientWidth || 600, 300);
+    canvas.width = w; canvas.height = 144;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "oklch(14% 0.008 40)"; ctx.fillRect(0, 0, w, 144);
+    const img = ctx.createImageData(w, 144);
+    const colW = w / Math.max(frames.length, 1);
+    frames.forEach((f, i) => {
+      if (!f.chroma) return;
+      const x0 = Math.floor(i * colW), x1 = Math.min(Math.floor((i+1) * colW), w);
+      for (let p = 0; p < 12; p++) {
+        const v = f.chroma[p];
+        const y0 = Math.floor(p * 12), y1 = Math.min(y0 + 12, 144);
+        // warm amber ramp: quiet -> paper, loud -> accent
+        const L = 14 + v * 58, C = 0.008 + v * 0.15, H = 40 + v * 12;
+        const [r, g, b] = oklchToRgb(L/100, C, H/360);
+        for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+          const o = (y * w + x) * 4;
+          img.data[o] = r; img.data[o+1] = g; img.data[o+2] = b; img.data[o+3] = 255;
+        }
+      }
+    });
+    ctx.putImageData(img, 0, 0);
+  }
+
+  // minimal OKLCH -> sRGB (via OKLab); good enough for a heatmap ramp
+  function oklchToRgb(L, C, h) {
+    const a = C * Math.cos(2*Math.PI*h), b2 = C * Math.sin(2*Math.PI*h);
+    const l_ = L + 0.3963377774*a + 0.2158037573*b2;
+    const m_ = L - 0.1055613458*a - 0.0638541728*b2;
+    const s_ = L - 0.0894841775*a - 1.2914855480*b2;
+    const l = l_**3, m = m_**3, s = s_**3;
+    let R =  4.0767416621*l - 3.3077115913*m + 0.2309699292*s;
+    let G = -1.2684380046*l + 2.6097574011*m - 0.3413193965*s;
+    let B = -0.0041960863*l - 0.7034186147*m + 1.7076147010*s;
+    const f = (c) => Math.round(255 * Math.min(1, Math.max(0, c <= 0.0031308 ? 12.92*c : 1.055*(c**(1/2.4))-0.055)));
+    return [f(R), f(G), f(B)];
+  }
+
+  function paintHead() {
+    cancelAnimationFrame(state.raf);
+    const head = timeline.querySelector(".playhead");
+    const segs = [...timeline.querySelectorAll(".seg")];
+    const loop = () => {
+      const t = audio.currentTime, total = state.duration || audio.duration || 1;
+      if (head) head.style.left = `${Math.min(t/total, 1)*100}%`;
+      const idx = body_idx(t);
+      segs.forEach((el, i) => el.classList.toggle("now", state.data && i === idx));
+      clockEl.textContent = `${fmt(t)} / ${fmt(total)}`;
+      state.raf = requestAnimationFrame(loop);
+    };
+    const body_idx = (t) => {
+      if (!state.data) return -1;
+      return state.data.segments.findIndex(s => t >= s.start && t < s.end);
+    };
+    loop();
+  }
+
+  playBtn.addEventListener("click", () => {
+    if (audio.paused) { audio.play(); playBtn.textContent = "Pause"; }
+    else { audio.pause(); playBtn.textContent = "Play"; }
+  });
+  audio.addEventListener("ended", () => { playBtn.textContent = "Play"; });
+  file.addEventListener("change", () => loadFile(file.files[0]));
+  $("demo").addEventListener("click", (e) => { e.preventDefault(); demo(); });
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); drop.classList.add("drag");
+  }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); drop.classList.remove("drag");
+  }));
+  drop.addEventListener("drop", (e) => loadFile(e.dataTransfer.files[0]));
+
+  // debug hook for headless probes
+  window.chordlens = { get state() { return {segments: state.data && state.data.segments.length,
+                                              frames: state.data && state.data.frames.length,
+                                              audioReady: !!audio.src}; } };
+  // ?demo=1 auto-runs the demo loop (screenshots, smoke tests, cold checks)
+  if (new URLSearchParams(location.search).get("demo") === "1") demo();
+})();
+</script>
+</body>
+</html>
