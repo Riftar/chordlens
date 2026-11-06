@@ -36,10 +36,14 @@ read every major chord as maj7 because of it).
 - Frames within one FFT window (~0.7 s) of a chord boundary straddle two
   chords; interior frames are what the accuracy gates score.
 - Clean synthetic recordings: interior exact ≥ 75%, region majority
-  7/7 chords correct.
-- Dense mixes (drums + bass drone + gain wobble): chord *roots* stay
-  findable (≥ 55% interior frames, ≥ 4/7 region majorities); quality
-  labels degrade first. Real-song quality tuning is the open frontier.
+  6/7 chords exact + 7/7 quality family.
+- Real songs (verified on guitar backing tracks, 2026-11-06): a known
+  Am-F-C-G loop comes back as exactly those four triads, top-4 by time.
+  Dense mixes keep their roots and key palette; individual chord *edges*
+  still flicker between neighboring qualities (sus4 vs 7 vs triad) —
+  boundary refinement is the open frontier.
+- The maj-vs-7th knife edge on quiet 7ths is a known trade-off tuned in
+  favor of real triads.
 - 16-bit PCM WAV in; 8/24/32-bit and float WAVs are rejected with a
   clear message (convert first).
 
