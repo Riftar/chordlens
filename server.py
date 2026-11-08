@@ -16,6 +16,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import wave as wavemod
 
+from chordlens.chords import NOTE_NAMES
 from chordlens.detect import analyze_detailed
 from chordlens import progressions
 
@@ -86,6 +87,30 @@ class Handler(BaseHTTPRequestHandler):
                     entry["chords"] = [c["label"] for c in progressions.chords_for(pid, key)]
                 body.append(entry)
             self._send(200, body)
+            return
+        if path == "/api/key":
+            try:
+                key_root = int(query.get("key", 0)) % 12
+            except ValueError:
+                self._send(400, {"error": "key must be an integer"})
+                return
+            self._send(200, {"key": NOTE_NAMES[key_root], "chords": progressions.key_chords(key_root)})
+            return
+        if path == "/api/chord.wav":
+            try:
+                root = int(query.get("root", 0)) % 12
+                dur = float(query.get("dur", 1.4))
+            except ValueError:
+                self._send(400, {"error": "root and dur must be numbers"})
+                return
+            quality = query.get("quality", "maj")
+            if quality not in progressions.QUALITY_INTERVALS:
+                self._send(400, {"error": f"unknown quality: {quality!r}"})
+                return
+            if not 0.3 <= dur <= 5.0:
+                self._send(400, {"error": "dur must be 0.3-5.0 seconds"})
+                return
+            self._send(200, progressions.render_single(root, quality, dur), "audio/wav")
             return
         if path == "/api/progression.wav":
             pid = query.get("id", "")

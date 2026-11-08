@@ -14,6 +14,53 @@ SR = 11025
 BEATS_PER_CHORD = 4
 LOOPS = 2
 
+# Major-scale degree table: semitone offset + triad quality per degree.
+# Qualities are DERIVED from stacking thirds (scale steps 0-2-4), matching
+# music theory: I ii iii IV V vi vii°.
+MAJOR_STEPS = (0, 2, 4, 5, 7, 9, 11)
+NUMERALS = ("I", "ii", "iii", "IV", "V", "vi", "vii°")
+FUNCTIONS = ("Tonic", "Subdominant", "Tonic", "Subdominant", "Dominant",
+             "Tonic", "Dominant")
+
+
+def _degree_quality(deg):
+    """Stack thirds on scale degree `deg` (0..6) -> (semitones, quality)."""
+    def pick(i):
+        return MAJOR_STEPS[i % 7] + 12 * (i // 7)
+    root, third, fifth = pick(deg), pick(deg + 2), pick(deg + 4)
+    iv3, iv5 = third - root, fifth - root
+    if iv5 == 6:
+        quality = "dim"
+    elif iv3 == 4:
+        quality = "maj"
+    else:
+        quality = "min"
+    return root, quality
+
+
+def key_chords(key_root):
+    """The seven diatonic triads of a major key: numeral, label, notes,
+    harmonic function. One endpoint serves every key."""
+    out = []
+    for deg in range(7):
+        semis, quality = _degree_quality(deg)
+        base_pc = (key_root + semis) % 12
+        notes = [NOTE_NAMES[(base_pc + iv) % 12]
+                 for iv in QUALITY_INTERVALS[quality]]
+        out.append({
+            "numeral": NUMERALS[deg],
+            "label": NOTE_NAMES[base_pc] + quality,
+            "notes": notes,
+            "function": FUNCTIONS[deg],
+        })
+    return out
+
+
+def _deg_step(deg, degree_label):
+    semis, quality = _degree_quality(deg)
+    return {"degree": degree_label, "semitones": semis, "quality": quality}
+
+
 PROGRESSIONS = {
     "royal-road": {
         "name": "Royal Road",
@@ -23,10 +70,67 @@ PROGRESSIONS = {
                         "two rising steps, then a soft landing on vi. "
                         "Endless in anime openings and city-pop choruses."),
         "steps": [
-            {"degree": "IV", "semitones": 5, "quality": "maj"},
-            {"degree": "V", "semitones": 7, "quality": "maj"},
-            {"degree": "iii", "semitones": 4, "quality": "min"},
-            {"degree": "vi", "semitones": 9, "quality": "min"},
+            _deg_step(3, "IV"), _deg_step(4, "V"),
+            _deg_step(2, "iii"), _deg_step(5, "vi"),
+        ],
+    },
+    "pop-axis": {
+        "name": "Pop Axis",
+        "origin": "Western pop",
+        "native": "",
+        "description": ("I - V - vi - IV. The four-chord loop behind "
+                        "thousands of hits; nearly every campfire song "
+                        "lives here."),
+        "steps": [
+            _deg_step(0, "I"), _deg_step(4, "V"),
+            _deg_step(5, "vi"), _deg_step(3, "IV"),
+        ],
+    },
+    "classic-cadence": {
+        "name": "Classic Cadence",
+        "origin": "Western common practice",
+        "native": "",
+        "description": ("I - IV - V - I. The sentence shape of Western "
+                        "music for three centuries: leave home, build "
+                        "tension, return."),
+        "steps": [
+            _deg_step(0, "I"), _deg_step(3, "IV"),
+            _deg_step(4, "V"), _deg_step(0, "I"),
+        ],
+    },
+    "rotation": {
+        "name": "Axis Rotation",
+        "origin": "Western pop",
+        "native": "",
+        "description": ("vi - IV - I - V. The pop axis starting from the "
+                        "relative minor: same four chords, darker first "
+                        "impression."),
+        "steps": [
+            _deg_step(5, "vi"), _deg_step(3, "IV"),
+            _deg_step(0, "I"), _deg_step(4, "V"),
+        ],
+    },
+    "doo-wop": {
+        "name": "Doo-Wop",
+        "origin": "USA, 1950s",
+        "native": "",
+        "description": ("I - vi - IV - V. The '50s standby - blue moon, "
+                        "stand by me. The first progression most "
+                        "guitarists ever learn."),
+        "steps": [
+            _deg_step(0, "I"), _deg_step(5, "vi"),
+            _deg_step(3, "IV"), _deg_step(4, "V"),
+        ],
+    },
+    "jazz-cadence": {
+        "name": "Jazz Cadence",
+        "origin": "Jazz",
+        "native": "",
+        "description": ("ii - V - I. Three chords that summarize all of "
+                        "functional harmony; learn this one and you can "
+                        "sit in with a jazz band."),
+        "steps": [
+            _deg_step(1, "ii"), _deg_step(4, "V"), _deg_step(0, "I"),
         ],
     },
     # future: "andalusian" (i-VII-VI-V, Spain/Arabic-adjacent descent),
@@ -52,6 +156,16 @@ def chords_for(prog_id, key_root):
         label = NOTE_NAMES[base % 12] + step["quality"]
         out.append({"degree": step["degree"], "label": label, "midis": midis})
     return out
+
+
+def render_single(root_pc, quality, dur=1.4, base_midi=48):
+    """One chord as WAV bytes - the lesson pages' playback primitive."""
+    midis = [base_midi + root_pc + iv for iv in QUALITY_INTERVALS[quality]]
+    midis.append(base_midi + root_pc + 12)
+    buf = [0.0] * int((dur + 0.3) * SR)
+    render_chord(buf, midis, 0.05, dur, SR)
+    from .synth import samples_to_wav_bytes
+    return samples_to_wav_bytes(buf, SR)
 
 
 def render(prog_id, key_root=0, bpm=100, loops=LOOPS):

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chordlens - lessons</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1;
+    background:
+      radial-gradient(38rem 26rem at 50% 0%, oklch(26% 0.055 50 / 0.55), transparent 70%),
+      radial-gradient(34rem 24rem at 8% 95%, oklch(24% 0.045 30 / 0.45), transparent 70%);
+  }
+  * { box-sizing: border-box; }
+  html, body { overflow-x: clip; }
+  body {
+    margin: 0; background: var(--color-paper); color: var(--color-ink);
+    font-family: var(--font-mono); font-size: var(--text-base); line-height: 1.6;
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: var(--color-accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible, select:focus-visible {
+    outline: 2px solid var(--color-focus); outline-offset: 3px;
+  }
+  .nav {
+    position: sticky; top: 0; z-index: var(--z-nav);
+    display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: oklch(14% 0.008 40 / 0.85); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .wordmark { font-weight: 700; letter-spacing: -0.02em; }
+  .wordmark::before {
+    content: ""; display: inline-block; width: 0.55em; height: 0.55em;
+    background: var(--color-accent); margin-right: 0.55em; transform: translateY(-0.05em);
+  }
+  .nav-links { font-size: var(--text-sm); }
+  .nav-links a { color: var(--color-muted); }
+  .nav-links a[aria-current="page"] { color: var(--color-accent); }
+  .nav-meta { color: var(--color-muted); font-size: var(--text-sm); white-space: nowrap; }
+  @media (max-width: 640px) { .nav-meta { display: none; } }
+
+  .wrap { max-width: 62rem; margin: 0 auto; padding: 0 var(--space-lg); }
+  .hero { padding: var(--space-2xl) 0 var(--space-lg); }
+  .hero h1 {
+    font-size: var(--text-display); font-weight: 700; line-height: 1.05;
+    letter-spacing: -0.03em; margin: 0 0 var(--space-md);
+    max-width: 20ch; overflow-wrap: anywhere; min-width: 0;
+  }
+  .hero p { color: var(--color-muted); max-width: 58ch; margin: 0; }
+  .hero p b { color: var(--color-ink); font-weight: 400; }
+
+  .lesson {
+    background: var(--color-paper-2); border-radius: var(--radius);
+    padding: var(--space-lg); margin: 0 0 var(--space-xl);
+  }
+  .lesson h2 { font-size: var(--text-lg); font-weight: 700; margin: 0 0 var(--space-xs); }
+  .lesson .sub { color: var(--color-muted); margin: 0 0 var(--space-lg); max-width: 70ch; }
+
+  select {
+    font-family: inherit; color: var(--color-ink); background: var(--color-paper-3);
+    border: 1px solid var(--color-rule); border-radius: var(--radius);
+    padding: var(--space-sm) var(--space-md); font-size: var(--text-sm);
+  }
+  label { color: var(--color-muted); font-size: var(--text-sm); display: block; margin-bottom: var(--space-xs); }
+  .controls { display: flex; flex-wrap: wrap; gap: var(--space-lg); margin-bottom: var(--space-md); }
+  button.act {
+    font-family: inherit; font-size: var(--text-sm); color: var(--color-ink);
+    background: var(--color-paper-3); border: 0; border-radius: var(--radius-pill);
+    padding: var(--space-sm) var(--space-lg); cursor: pointer; white-space: nowrap;
+    transition: background-color var(--dur-short) var(--ease-out), transform 100ms var(--ease-out);
+  }
+  button.act:hover { background: oklch(25% 0.014 40); }
+  button.act:active { transform: translateY(1px); }
+
+  /* piano */
+  .piano { position: relative; height: 9.5rem; margin: var(--space-md) 0; user-select: none; }
+  .wkey {
+    position: absolute; top: 0; bottom: 0;
+    background: oklch(88% 0.01 40); border: 1px solid oklch(40% 0.01 40);
+    border-radius: 0 0 6px 6px;
+  }
+  .wkey.hl { background: var(--color-accent); }
+  .bkey {
+    position: absolute; top: 0; height: 60%;
+    background: oklch(10% 0.01 40); border: 1px solid oklch(5% 0.01 40);
+    border-radius: 0 0 5px 5px; z-index: 2;
+  }
+  .bkey.hl { background: var(--color-accent); }
+  .pname {
+    position: absolute; bottom: 6px; width: 100%; text-align: center;
+    font-size: var(--text-xs); color: var(--color-muted); pointer-events: none;
+  }
+  .result { font-size: var(--text-md); font-weight: 600; margin: var(--space-sm) 0; }
+  .formula { color: var(--color-muted); font-size: var(--text-sm); }
+
+  /* key grid */
+  .keygrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: var(--space-sm); margin: var(--space-md) 0; }
+  .kcard {
+    background: var(--color-paper-3); border: 1px solid var(--color-rule);
+    border-radius: var(--radius); padding: var(--space-md); cursor: pointer; text-align: center;
+    font: inherit; color: inherit;
+    transition: border-color var(--dur-short) var(--ease-out);
+  }
+  .kcard:hover { border-color: var(--color-neutral); }
+  .kcard:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+  .kcard .rn { font-size: var(--text-md); font-weight: 700; }
+  .kcard .nm { font-size: var(--text-sm); margin-top: 2px; }
+  .kcard .nts { font-size: var(--text-xs); color: var(--color-muted); margin-top: 2px; }
+  .kcard .fn { font-size: var(--text-xs); color: var(--color-accent); margin-top: var(--space-xs); }
+  .legend { display: flex; gap: var(--space-lg); flex-wrap: wrap; font-size: var(--text-sm); color: var(--color-muted); }
+  .legend b { color: var(--color-ink); font-weight: 400; }
+
+  footer { border-top: 1px solid var(--color-rule); margin-top: var(--space-xl);
+           padding: var(--space-xl) 0 var(--space-2xl); }
+  footer .say { font-size: var(--text-md); font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  footer .fine { color: var(--color-muted); font-size: var(--text-sm); margin: var(--space-sm) 0 0; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero, .lesson { animation: rise 450ms var(--ease-out) both; }
+    .lesson { animation-delay: 90ms; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="wordmark">chordlens</span>
+  <span class="nav-links"><a href="/">analyze</a> · <a href="/progressions.html">progressions</a> · <a href="/lessons.html" aria-current="page">lessons</a></span>
+  <span class="nav-meta">v0.2 · offline · zero dependencies</span>
+</nav>
+
+<div class="wrap">
+  <section class="hero">
+    <h1>Build the chord. Hear the key.</h1>
+    <p>Two lessons, self-paced: what a triad actually is, and the seven
+    chords every major key hands you. Everything plays through the same
+    synth that renders the test fixtures - <b>one engine, zero downloads</b>.</p>
+  </section>
+
+  <section class="lesson" aria-label="lesson 1: triads">
+    <h2>Lesson 1 - What a chord is</h2>
+    <p class="sub">A triad is three notes: root, third, fifth. The third
+    decides the mood - major bright, minor dark, diminished unstable.
+    Build one, then flip the quality and play again.</p>
+    <div class="controls">
+      <div>
+        <label for="tRoot">root</label>
+        <select id="tRoot"></select>
+      </div>
+      <div>
+        <label for="tQuality">quality</label>
+        <select id="tQuality">
+          <option value="maj">major - 1 · 3 · 5</option>
+          <option value="min">minor - 1 · ♭3 · 5</option>
+          <option value="dim">diminished - 1 · ♭3 · ♭5</option>
+        </select>
+      </div>
+      <div style="align-self: end;">
+        <button class="act" id="tPlay" type="button">Play chord</button>
+      </div>
+    </div>
+    <div class="piano" id="piano"></div>
+    <p class="result" id="tResult"></p>
+    <p class="formula" id="tFormula"></p>
+  </section>
+
+  <section class="lesson" aria-label="lesson 2: the key">
+    <h2>Lesson 2 - Every chord in a key</h2>
+    <p class="sub">A major key gives you exactly seven chords, one per
+    scale degree. The pattern is identical in every key - only the names
+    change. Tap any card to hear it; then hear the strongest gravity in
+    music: V pulling home to I.</p>
+    <div class="controls">
+      <div>
+        <label for="keySel">key</label>
+        <select id="keySel"></select>
+      </div>
+      <div style="align-self: end;">
+        <button class="act" id="vThenI" type="button">Hear V → I resolution</button>
+      </div>
+    </div>
+    <div class="keygrid" id="keyGrid"></div>
+    <div class="legend">
+      <span><b>Tonic</b> I iii vi - home, rest</span>
+      <span><b>Subdominant</b> ii IV - moves away</span>
+      <span><b>Dominant</b> V vii° - tension, resolves to I</span>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p class="say">Theory you can click.</p>
+    <p class="fine">MIT license · Python stdlib only · ear trainer and quiz land in v0.3 / v0.4</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const IVS = {maj: [0,4,7], min: [0,3,7], dim: [0,3,6]};
+  const FORMULAS = {
+    maj: "formula: 1 · 3 · 5 (4 + 3 semitones)",
+    min: "formula: 1 · ♭3 · 5 (3 + 4 semitones)",
+    dim: "formula: 1 · ♭3 · ♭5 (3 + 3 semitones)",
+  };
+  const tRoot = $("tRoot"), tQuality = $("tQuality"), piano = $("piano"),
+        tResult = $("tResult"), tFormula = $("tFormula"),
+        keySel = $("keySel"), keyGrid = $("keyGrid");
+  const audio = new Audio();
+
+  NOTES.forEach((n, i) => {
+    tRoot.add(new Option(n, i));
+    keySel.add(new Option(n + " major", i));
+  });
+
+  /* piano: 7 white + 5 black, tagged by pitch class */
+  const WHITE = [0,2,4,5,7,9,11], WNAME = ["C","D","E","F","G","A","B"];
+  const ww = 100 / WHITE.length;
+  WHITE.forEach((pc, i) => {
+    const d = document.createElement("div");
+    d.className = "wkey"; d.dataset.pc = pc;
+    d.style.left = (i * ww) + "%"; d.style.width = ww + "%";
+    const s = document.createElement("span");
+    s.className = "pname"; s.textContent = WNAME[i]; d.appendChild(s);
+    piano.appendChild(d);
+  });
+  [1,3,6,8,10].forEach(pc => {
+    const before = WHITE.filter(w => w < pc).length;
+    const d = document.createElement("div");
+    d.className = "bkey"; d.dataset.pc = pc;
+    d.style.left = (before * ww - ww * 0.3) + "%"; d.style.width = (ww * 0.6) + "%";
+    piano.appendChild(d);
+  });
+  function highlight(pcs) {
+    piano.querySelectorAll(".hl").forEach(k => k.classList.remove("hl"));
+    pcs.forEach(pc => piano.querySelectorAll(`[data-pc="${pc}"]`)
+      .forEach(k => k.classList.add("hl")));
+  }
+
+  function currentTriad() {
+    return IVS[tQuality.value].map(i => (+tRoot.value + i) % 12);
+  }
+  function updateTriad() {
+    const pcs = currentTriad();
+    highlight(pcs);
+    const qname = {maj: "major", min: "minor", dim: "diminished"}[tQuality.value];
+    tResult.textContent = `${NOTES[+tRoot.value]} ${qname} = ${pcs.map(p => NOTES[p]).join(" · ")}`;
+    tFormula.textContent = FORMULAS[tQuality.value];
+  }
+  tRoot.addEventListener("change", updateTriad);
+  tQuality.addEventListener("change", updateTriad);
+  updateTriad();
+
+  function playChord(root, quality, dur) {
+    fetch(`/api/chord.wav?root=${root}&quality=${quality}&dur=${dur}`)
+      .then(r => { if (!r.ok) throw new Error("render failed"); return r.arrayBuffer(); })
+      .then(buf => {
+        if (audio.src.startsWith("blob:")) URL.revokeObjectURL(audio.src);
+        audio.src = URL.createObjectURL(new Blob([buf], {type: "audio/wav"}));
+        audio.play();
+      })
+      .catch(() => {});
+  }
+  $("tPlay").addEventListener("click", () =>
+    playChord(+tRoot.value, tQuality.value, 1.5));
+
+  /* lesson 2: the key grid, from the server's music theory */
+  function renderKey() {
+    fetch(`/api/key?key=${keySel.value}`)
+      .then(r => r.json())
+      .then(body => {
+        keyGrid.innerHTML = "";
+        body.chords.forEach(c => {
+          const b = document.createElement("button");
+          b.type = "button"; b.className = "kcard";
+          b.innerHTML = `<div class="rn">${c.numeral}</div><div class="nm">${c.label}</div>` +
+            `<div class="nts">${c.notes.join(" ")}</div><div class="fn">${c.function}</div>`;
+          b.addEventListener("click", () => {
+            const rootPc = NOTES.indexOf(c.label.slice(0, c.label[1] === "#" ? 2 : 1));
+            const q = c.label.endsWith("maj") ? "maj" : c.label.endsWith("dim") ? "dim" : "min";
+            playChord(rootPc, q, 1.2);
+          });
+          keyGrid.appendChild(b);
+        });
+      });
+  }
+  keySel.addEventListener("change", renderKey);
+  renderKey();
+
+  $("vThenI").addEventListener("click", () => {
+    const key = +keySel.value;
+    playChord((key + 7) % 12, "maj", 1.1);
+    audio.onended = () => {
+      playChord(key, "maj", 1.7);
+      audio.onended = null;
+    };
+  });
+
+  window.chordlens = { get state() {
+    return {triad: tResult.textContent,
+            hl: [...piano.querySelectorAll(".hl")].map(k => +k.dataset.pc),
+            keyCards: keyGrid.children.length,
+            key: keySel.value}; } };
+})();
+</script>
+</body>
+</html>
