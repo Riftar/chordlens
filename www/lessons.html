@@ -153,9 +153,10 @@
       <div>
         <label for="tQuality">quality</label>
         <select id="tQuality">
-          <option value="maj">major - 1 · 3 · 5</option>
-          <option value="min">minor - 1 · ♭3 · 5</option>
-          <option value="dim">diminished - 1 · ♭3 · ♭5</option>
+          <option value="maj">major - bright, 1 · 3 · 5</option>
+          <option value="min">minor - dark, 1 · ♭3 · 5</option>
+          <option value="dim">diminished - unstable, 1 · ♭3 · ♭5</option>
+          <option value="aug">augmented - floating, 1 · 3 · ♯5</option>
         </select>
       </div>
       <div style="align-self: end;">
@@ -203,11 +204,12 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-  const IVS = {maj: [0,4,7], min: [0,3,7], dim: [0,3,6]};
+  const IVS = {maj: [0,4,7], min: [0,3,7], dim: [0,3,6], aug: [0,4,8]};
   const FORMULAS = {
     maj: "formula: 1 · 3 · 5 (4 + 3 semitones)",
     min: "formula: 1 · ♭3 · 5 (3 + 4 semitones)",
     dim: "formula: 1 · ♭3 · ♭5 (3 + 3 semitones)",
+    aug: "formula: 1 · 3 · ♯5 (4 + 4 semitones)",
   };
   const tRoot = $("tRoot"), tQuality = $("tQuality"), piano = $("piano"),
         tResult = $("tResult"), tFormula = $("tFormula"),
@@ -249,7 +251,7 @@
   function updateTriad() {
     const pcs = currentTriad();
     highlight(pcs);
-    const qname = {maj: "major", min: "minor", dim: "diminished"}[tQuality.value];
+    const qname = {maj: "major", min: "minor", dim: "diminished", aug: "augmented"}[tQuality.value];
     tResult.textContent = `${NOTES[+tRoot.value]} ${qname} = ${pcs.map(p => NOTES[p]).join(" · ")}`;
     tFormula.textContent = FORMULAS[tQuality.value];
   }

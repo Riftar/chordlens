@@ -58,54 +58,45 @@ Learning Coach's single-file interactive module (kept private at
 Each rung has a scope, an acceptance gate, and a deliberate NOT-list.
 Nothing below ships until the rung above is green.
 
-**Ladder revision (2026-11-08, after the product roadmap review):** the
-detector moat stays ahead of creative/convenience features; persistence
-lands with the features that need it; PWA/mobile hardening is the
-pre-launch rung, not an early one. Items that break a standing principle
-(vendored deps, cloud, telemetry) moved to a deliberate-exceptions tier
-below - adopting any of them is an explicit decision, never drift.
-Note: the roadmap's urgent "lookahead scheduler" fix does not apply -
-that bug lives in client-side oscillator loops; chordlens plays
-server-rendered WAVs through one <audio> element and has no timer to
-drift. The one-engine rule already paid for itself.
+**Ladder revision 2 (2026-11-08, after the Chord Lab atlas review):**
+the atlas bet is adopted - progressions taught as a map of moods,
+mood-first, theory-second; the Royal Road leads. The detector moat
+still ships before content scale-up; persistence lands with the
+features that need it; PWA/mobile hardening is the pre-launch rung.
+Items that break a standing principle (vendored deps, cloud, telemetry)
+moved to a deliberate-exceptions tier below - adopting any of them is
+an explicit decision, never drift. Note: the prototype roadmap's
+urgent "lookahead scheduler" fix does not apply - that bug lives in
+client-side oscillator loops; chordlens plays server-rendered WAVs
+through <audio> elements and has no timer to drift.
 
-### v0.2 — Lessons: triads and the key (SHIPPED 2026-11-08, bbca0d7)
-- **Scope:** two lesson pages in the existing Midnight client: (a) build
-  a triad — root/quality selectors, piano-key highlight, play button;
-  (b) the key — seven chord cards with numerals + functions, tap to
-  hear, V→I resolution demo. Playback stays server-rendered (the
-  existing synth, one engine); the progression registry gains the five
-  classics from the reference module (I-V-vi-IV, I-IV-V-I, vi-IV-I-V,
-  I-vi-IV-V, ii-V-I).
-- **Gate:** an /api/key endpoint returns the seven chords for a key
-  (unit-tested: C and F produce the correct labels); headless check —
-  selectors move the piano highlight, every card plays.
-- **NOT:** ear trainer, quiz, mic, client-side synth, localStorage.
+### v0.2.1 — Atlas upgrade (SHIPPED 2026-11-08)
+Mood/genre framing on every registry entry; 10 progressions (Royal
+Road + its 7ths variant, Pop Axis, Classic Cadence, Axis Rotation,
+Doo-Wop, Canon, 12-Bar Blues, Andalusian - first minor-key entry,
+Jazz Cadence); per-chord click-to-hear chips with loop playhead;
+augmented quality in the triad lab and renderer.
 
-### v0.3 — Ear trainer
-- **Scope:** 10-round maj/min/dim game. Chords come from a seeded
-  server endpoint (rounds replayable, tests deterministic); score line;
-  per-answer feedback revealing the notes; best score kept in
-  localStorage (first persistence, arriving with the first feature
-  that produces a score worth keeping).
-- **Gate:** a fixed seed produces a fixed question sequence (tested via
-  API); a headless run records answers and shows the final score;
-  reload keeps the best score.
-- **NOT:** mic input, difficulty beyond the three qualities, cloud,
-  cross-device sync.
+### v0.3 — Ear trainer I: qualities + name-that-progression
+- **Scope:** two seeded server-driven modes: (a) chord quality ID
+  (maj/min/dim/aug); (b) "name that progression" - hear a loop, pick
+  the atlas card. Per-answer feedback revealing notes/degrees; best
+  scores in localStorage.
+- **Gate:** fixed seed -> fixed question sequence (API-tested);
+  headless run answers and scores; best score survives reload.
+- **NOT:** mic input, interval ID, difficulty tiers, cloud.
 
-### v0.4 — Quiz + practice plan + progress view
-- **Scope:** data-driven quiz (question bank served by the server, not
-  hardcoded in the client), explanation on every answer, scoring tiers,
-  the 7-day practice plan page, and a small progress view (streak,
-  lesson completions, ear/quiz bests - all localStorage; IndexedDB only
-  when data outgrows strings, not before).
-- **Gate:** quiz endpoint serves the bank; a headless run answers
-  everything correctly and lands the perfect-tier message; completions
-  survive a reload.
-- **NOT:** accounts, spaced repetition, multiple banks, telemetry.
-  The analytics funnel stays LOCAL (completion events in localStorage,
-  exportable by hand) until there are real learners to instrument.
+### v0.4 — Quiz + review queue + progress view
+- **Scope:** data-driven quiz bank (served, not hardcoded), missed
+  questions resurface until mastered (deterministic review queue),
+  scoring tiers, 7-day practice plan, progress view (streak,
+  completions, bests - localStorage; IndexedDB only when data
+  outgrows strings).
+- **Gate:** bank served by endpoint; headless perfect run lands the
+  perfect-tier message; a wrong answer re-asks before finish;
+  completions survive reload.
+- **NOT:** accounts, spaced repetition scheduling, telemetry. The
+  analytics funnel stays LOCAL until there are real learners.
 
 ### v0.5 — Listen mode (the moat, and the hardest rung)
 - **Scope:** browser mic → Web Audio AnalyserNode → a JS twin of the
@@ -121,34 +112,40 @@ drift. The one-engine rule already paid for itself.
   grading beyond "right chord sustained ~1 s".
 
 ### v0.6 — Progression builder (the creative rung)
-- **Scope:** drag/tap chords from a key into your own loop, set tempo,
-  play it, save named loops to localStorage, and "read it back" through
-  the detector (self-check for free). Saved loops render through the
-  same /api/progression.wav engine.
-- **Gate:** a built loop renders and the detector reads its chords back
-  (same gate as the registry); saved loops survive reload; headless
-  build-render-read pass.
-- **NOT:** sharing/export, accounts, MIDI recording.
+- **Scope:** tap chords from a key palette into your own loop (V7 and
+  bVII spice chords included), reorder/remove, set tempo, play with
+  playhead, starter ideas, save named loops to localStorage, "read it
+  back" through the detector, and export as MIDI (a .mid writer is a
+  small pure-stdlib binary format - zero-dep by construction).
+- **Gate:** built loop renders and the detector reads its chords back;
+  saved loops survive reload; exported MIDI parses as a valid file
+  (header chunk + track events byte-checked).
+- **NOT:** sharing, accounts, MIDI recording of live input.
 
-### v0.7 — Mobile + PWA + a11y hardening (the pre-launch rung)
-- **Scope:** service worker + manifest (vanilla, offline by nature),
-  installable icon, full keyboard-nav and ARIA sweep across all pages,
-  visual fallbacks for every audio cue (the piano highlight pattern
-  already does this - extend it), responsive polish on every page.
-- **Gate:** Lighthouse-style manual checklist green headlessly
-  (manifest served, SW caches, no horizontal scroll at 320/375/414/768,
-  every interactive element reachable by keyboard).
+### v0.7 — Atlas deepening (the content rung)
+- **Scope:** 10 → 30+ progressions as data entries: city pop, lo-fi,
+  gospel, metal, K-pop, video-game loops - each with mood, genre,
+  why-it-works; 8-bar "hear it in context" demos.
+- **Gate:** each new entry passes the same registry tests (degrees,
+  labels in two keys, render + RIFF); atlas page loads all entries.
+- **NOT:** lesson pages per progression (mini-lessons land with v0.9
+  curriculum), audio samples of real songs (synth demos only).
+
+### v0.8 — Mobile + PWA + a11y hardening (the pre-launch rung)
+- **Scope:** service worker + manifest (vanilla), installable icon,
+  full keyboard-nav and ARIA sweep, visual fallbacks for every audio
+  cue (the piano-highlight pattern extended), responsive polish.
+- **Gate:** manifest served, SW caches, no horizontal scroll at
+  320/375/414/768, every interactive element keyboard-reachable.
 - **NOT:** app-store packaging, native shells.
 
-### v0.8 — Curriculum depth (content rung, after 10-learner feedback)
-- **Scope:** lessons as served data (JSON lesson/quiz banks): 7th
-  chords, inversions, minor keys, sus/add, blues form, cadences; ear
-  trainer difficulty tiers with wrong-answer resurfacing (local,
-  deterministic SM-2-lite).
+### v0.9 — Curriculum depth (theory lessons as data)
+- **Scope:** lessons/quizzes as served JSON: 7th chords, inversions,
+  minor keys, sus/add, blues form, cadences; per-progression
+  mini-lessons with a 3-question check; ear trainer difficulty tiers.
 - **Gate:** new topics appear in lesson + quiz + ear trainer from data
-  alone (no client change); each new topic's quiz gate passes.
-- **NOT:** staff notation (needs VexFlow - exceptions tier), adaptive
-  sequencing beyond resurfacing.
+  alone (no client change); each topic's quiz gate passes.
+- **NOT:** staff notation (VexFlow - exceptions tier).
 
 ### Deliberate exceptions (each requires an explicit Principal decision)
 These are good ideas that break a standing principle; adopting any one
@@ -158,18 +155,22 @@ is a decision, never drift:
   changes; anonymous-first stays until retention proves it.
 - **Error monitoring / analytics beyond local** - telemetry of any kind
   leaves the machine; contradicts the offline promise.
-- **Richer synth voices (bass, swing, style presets)** - engine growth;
-  fine, but it competes with detector work for the same hands.
+- **Richer synth voices (bass, swing, style presets) + metronome
+  click** - either a server click-track render or a client twin of the
+  synth; both are engine growth competing with detector work.
+- **Song-reference links per progression** - fine as plain outbound
+  links; anything richer (embedded players) drags third-party assets.
 
-### Later (parked, not promised)
-- Cultural expansion: Arabic (Andalusian i-VII-VI-V) and Javanese/
-  Sundanese progressions; pelog/slendro need a non-12-TET tuning
-  extension — its own design pass, not a data entry.
+### Post-launch (only after retention proves it)
+- Static hosting, landing page + SEO, PWA store listing, privacy/COPPA
+  pass, freemium or one-time unlock.
+- Cultural expansion continues in the atlas registry: Arabic
+  (Andalusian-adjacent), Javanese/Sundanese - pelog/slendro need a
+  non-12-TET tuning extension, its own design pass.
 - Quality-label accuracy on dense mixes; boundary sharpening
-  (multi-resolution front end); song-pattern library with reference
-  titles (progressions aren't copyrightable; titles as references only).
-- Guitar fretboard view, Bb/Eb transpose, monetization - after launch
-  and only if retention asks for them.
+  (multi-resolution front end); guitar fretboard view; song-pattern
+  library with reference titles (progressions aren't copyrightable;
+  titles as references only).
 
 ## Non-goals
 

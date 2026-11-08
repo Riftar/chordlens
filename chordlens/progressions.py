@@ -61,86 +61,165 @@ def _deg_step(deg, degree_label):
     return {"degree": degree_label, "semitones": semis, "quality": quality}
 
 
+def _S(semis, label, quality):
+    return {"degree": label, "semitones": semis, "quality": quality}
+
+
 PROGRESSIONS = {
     "royal-road": {
         "name": "Royal Road",
         "origin": "Japan",
         "native": "王道進行",
-        "description": ("IV - V - iii - vi. The J-pop and anime staple: "
-                        "two rising steps, then a soft landing on vi. "
-                        "Endless in anime openings and city-pop choruses."),
+        "genre": "anime · J-pop",
+        "mood": "Yearning, soaring, nostalgic",
+        "description": ("IV - V - iii - vi. Never lands on I, so tension "
+                        "circles forever. Endless in anime openings and "
+                        "city-pop choruses. Learn this plain-triad version "
+                        "first, then graduate to the 7ths variant."),
         "steps": [
-            _deg_step(3, "IV"), _deg_step(4, "V"),
-            _deg_step(2, "iii"), _deg_step(5, "vi"),
+            _S(5, "IV", "maj"), _S(7, "V", "maj"),
+            _S(4, "iii", "min"), _S(9, "vi", "min"),
+        ],
+    },
+    "royal-road-7": {
+        "name": "Royal Road (7ths)",
+        "origin": "Japan",
+        "native": "王道進行",
+        "genre": "anime · J-pop",
+        "mood": "The full anime sound, silkier and more grown-up",
+        "description": ("IVmaj7 - V7 - iii7 - vi7. The same loop with 7th "
+                        "chords - the shimmer you hear under late-night "
+                        "anime endings and city-pop bridges."),
+        "steps": [
+            _S(5, "IVmaj7", "maj7"), _S(7, "V7", "7"),
+            _S(4, "iii7", "min7"), _S(9, "vi7", "min7"),
         ],
     },
     "pop-axis": {
         "name": "Pop Axis",
         "origin": "Western pop",
         "native": "",
+        "genre": "pop · worldwide",
+        "mood": "Confident, sing-along",
         "description": ("I - V - vi - IV. The four-chord loop behind "
-                        "thousands of hits; nearly every campfire song "
-                        "lives here."),
+                        "thousands of hits. Starts and keeps returning "
+                        "home - the opposite game from the Royal Road."),
         "steps": [
-            _deg_step(0, "I"), _deg_step(4, "V"),
-            _deg_step(5, "vi"), _deg_step(3, "IV"),
+            _S(0, "I", "maj"), _S(7, "V", "maj"),
+            _S(9, "vi", "min"), _S(5, "IV", "maj"),
         ],
     },
     "classic-cadence": {
         "name": "Classic Cadence",
         "origin": "Western common practice",
         "native": "",
+        "genre": "classical · folk",
+        "mood": "Steady, homeward",
         "description": ("I - IV - V - I. The sentence shape of Western "
                         "music for three centuries: leave home, build "
                         "tension, return."),
         "steps": [
-            _deg_step(0, "I"), _deg_step(3, "IV"),
-            _deg_step(4, "V"), _deg_step(0, "I"),
+            _S(0, "I", "maj"), _S(5, "IV", "maj"),
+            _S(7, "V", "maj"), _S(0, "I", "maj"),
         ],
     },
     "rotation": {
         "name": "Axis Rotation",
         "origin": "Western pop",
         "native": "",
+        "genre": "pop · ballad",
+        "mood": "Wistful but driving",
         "description": ("vi - IV - I - V. The pop axis starting from the "
-                        "relative minor: same four chords, darker first "
-                        "impression."),
+                        "relative minor: opens minor-colored, lifts when "
+                        "I arrives."),
         "steps": [
-            _deg_step(5, "vi"), _deg_step(3, "IV"),
-            _deg_step(0, "I"), _deg_step(4, "V"),
+            _S(9, "vi", "min"), _S(5, "IV", "maj"),
+            _S(0, "I", "maj"), _S(7, "V", "maj"),
         ],
     },
     "doo-wop": {
         "name": "Doo-Wop",
         "origin": "USA, 1950s",
         "native": "",
-        "description": ("I - vi - IV - V. The '50s standby - blue moon, "
-                        "stand by me. The first progression most "
-                        "guitarists ever learn."),
+        "genre": "'50s · vintage",
+        "mood": "Sweet, retro, romantic",
+        "description": ("I - vi - IV - V. Blue moon, stand by me. I echoes "
+                        "into vi like an answer, then a gentle sway home. "
+                        "The first progression most guitarists learn."),
         "steps": [
-            _deg_step(0, "I"), _deg_step(5, "vi"),
-            _deg_step(3, "IV"), _deg_step(4, "V"),
+            _S(0, "I", "maj"), _S(9, "vi", "min"),
+            _S(5, "IV", "maj"), _S(7, "V", "maj"),
+        ],
+    },
+    "canon": {
+        "name": "Canon",
+        "origin": "Baroque, 1700s",
+        "native": "",
+        "genre": "classical · pop",
+        "mood": "Flowing, inevitable",
+        "description": ("I - V - vi - iii - IV - I - IV - V. Pachelbel's "
+                        "ground bass, still under countless ballads and "
+                        "wedding songs four centuries later."),
+        "steps": [
+            _S(0, "I", "maj"), _S(7, "V", "maj"), _S(9, "vi", "min"),
+            _S(4, "iii", "min"), _S(5, "IV", "maj"), _S(0, "I", "maj"),
+            _S(5, "IV", "maj"), _S(7, "V", "maj"),
+        ],
+    },
+    "blues-12": {
+        "name": "12-Bar Blues",
+        "origin": "USA, Delta blues",
+        "native": "",
+        "genre": "blues · rock",
+        "mood": "Rough, storytelling",
+        "description": ("I - I - I - I - IV - IV - I - I - V - IV - I - V. "
+                        "The form itself: the turnaround at the end spits "
+                        "you back to the top. Twelve bars, whole genre."),
+        "steps": [
+            _S(0, "I", "maj"), _S(0, "I", "maj"), _S(0, "I", "maj"), _S(0, "I", "maj"),
+            _S(5, "IV", "maj"), _S(5, "IV", "maj"),
+            _S(0, "I", "maj"), _S(0, "I", "maj"),
+            _S(7, "V", "maj"), _S(5, "IV", "maj"), _S(0, "I", "maj"), _S(7, "V", "maj"),
+        ],
+    },
+    "andalusian": {
+        "name": "Andalusian",
+        "origin": "Spain / flamenco",
+        "native": "",
+        "genre": "flamenco · minor",
+        "mood": "Dark, dramatic descent",
+        "description": ("i - VII - VI - V. The first minor-key cadence in "
+                        "the atlas: a walk-down that snaps back to the top. "
+                        "Here 'key' means the MINOR tonic - key C plays "
+                        "Cm - B - Ab - G. Root of Arabic-descended "
+                        "progressions too."),
+        "steps": [
+            _S(0, "i", "min"), _S(10, "VII", "maj"),
+            _S(8, "VI", "maj"), _S(7, "V", "maj"),
         ],
     },
     "jazz-cadence": {
         "name": "Jazz Cadence",
         "origin": "Jazz",
         "native": "",
+        "genre": "jazz",
+        "mood": "Smooth, resolving",
         "description": ("ii - V - I. Three chords that summarize all of "
                         "functional harmony; learn this one and you can "
                         "sit in with a jazz band."),
         "steps": [
-            _deg_step(1, "ii"), _deg_step(4, "V"), _deg_step(0, "I"),
+            _S(2, "ii", "min"), _S(7, "V", "maj"), _S(0, "I", "maj"),
         ],
     },
-    # future: "andalusian" (i-VII-VI-V, Spain/Arabic-adjacent descent),
-    # javanese/sundanese pelog progressions (needs non-12-TET tuning).
+    # future: city pop, lo-fi, gospel, metal, K-pop, video-game loops -
+    # the atlas grows as data entries. Javanese/Sundanese pelog needs a
+    # non-12-TET tuning extension (own design pass).
 }
 
 QUALITY_INTERVALS = {
     "maj": (0, 4, 7), "min": (0, 3, 7), "7": (0, 4, 7, 10),
     "maj7": (0, 4, 7, 11), "min7": (0, 3, 7, 10), "dim": (0, 3, 6),
-    "sus4": (0, 5, 7),
+    "sus4": (0, 5, 7), "aug": (0, 4, 8),
 }
 
 

@@ -82,6 +82,7 @@ class Handler(BaseHTTPRequestHandler):
             for pid, p in progressions.PROGRESSIONS.items():
                 entry = {"id": pid, "name": p["name"], "origin": p["origin"],
                          "native": p.get("native", ""), "description": p["description"],
+                         "genre": p.get("genre", ""), "mood": p.get("mood", ""),
                          "degrees": [s["degree"] for s in p["steps"]]}
                 if key is not None:
                     entry["chords"] = [c["label"] for c in progressions.chords_for(pid, key)]
