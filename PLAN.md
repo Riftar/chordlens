@@ -150,7 +150,14 @@ augmented quality in the triad lab and renderer.
 ### Deliberate exceptions (each requires an explicit Principal decision)
 These are good ideas that break a standing principle; adopting any one
 is a decision, never drift:
-- **Staff notation (VexFlow)** - first vendored JS dependency.
+- **Staff notation (VexFlow)** - ADOPTED 2026-11-08 (Principal's call):
+  the v5.0.0 bundle is vendored at www/vendor/vexflow.js (provenance and
+  sha256 in www/vendor/README.md), served first-party, works offline.
+  Rules: lazy-load only, staff views only - no other page references it.
+  The staff view itself remains an unbuilt ladder item (v0.9 curriculum
+  era); the vendor file is dormant until then. Admission criterion for
+  any future vendor: reducible to one committed file, zero dependency
+  tree, offline after vendoring.
 - **Accounts + cloud sync** - backend, auth, and the offline identity
   changes; anonymous-first stays until retention proves it.
 - **Error monitoring / analytics beyond local** - telemetry of any kind
