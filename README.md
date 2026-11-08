@@ -63,10 +63,6 @@ read every major chord as maj7 because of it).
 - `www/` — single-file client + `tokens.css`
 - `fixtures/` — deterministic generator (fixed-seed LCG): clean /
   messy / silence WAVs + `truth.json`
-- `songs/` — four real guitar backing tracks (mono 11 kHz WAV) used to
-  calibrate the detector on real audio (2026-11-06): `am-rock.wav` is the
-  calibration reference — a stated Am-F-C-G loop the detector returns as
-  exactly those four triads
 - `tests/` — accuracy gates + server contract tests, loopback-only
 
 ## License
