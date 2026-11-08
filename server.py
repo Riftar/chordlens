@@ -6,6 +6,7 @@ the analysis POST body never persists (tempfile, deleted after parse).
 """
 
 import argparse
+import hashlib
 import json
 import os
 import posixpath
@@ -18,10 +19,34 @@ import wave as wavemod
 
 from chordlens.chords import NOTE_NAMES
 from chordlens.detect import analyze_detailed
+from chordlens.synth import TIMBRES
 from chordlens import progressions
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MAX_BODY = 32 * 1024 * 1024  # 32 MB upload cap
+CACHE_DIR = os.path.join(ROOT, ".cache", "audio")
+_cache_lock = threading.Lock()
+
+
+def cached_audio(key, producer):
+    """Disk-cached render: a 5 s synthesis runs once, then serves instantly."""
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    path = os.path.join(CACHE_DIR, key + ".wav")
+    with _cache_lock:
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                return f.read()
+    data = producer()
+    tmp = path + ".tmp"
+    with open(tmp, "wb") as f:
+        f.write(data)
+    os.replace(tmp, path)
+    return data
+
+
+def cache_key(*parts):
+    raw = "|".join(str(p) for p in parts).encode()
+    return hashlib.sha256(raw).hexdigest()[:32]
 
 # www/ and fixtures/ are both served read-only; /fixtures/ exists so the
 # demo loop and the headless smoke test can fetch a real WAV.
@@ -111,7 +136,14 @@ class Handler(BaseHTTPRequestHandler):
             if not 0.3 <= dur <= 5.0:
                 self._send(400, {"error": "dur must be 0.3-5.0 seconds"})
                 return
-            self._send(200, progressions.render_single(root, quality, dur), "audio/wav")
+            timbre = query.get("t", "keys")
+            if timbre not in TIMBRES:
+                self._send(400, {"error": f"unknown timbre: {timbre!r}"})
+                return
+            key = cache_key("chord", root, quality, round(dur, 2), timbre)
+            data = cached_audio(key, lambda: progressions.render_single_stereo(
+                root, quality, dur, timbre=timbre))
+            self._send(200, data, "audio/wav")
             return
         if path == "/api/progression.wav":
             pid = query.get("id", "")
@@ -127,7 +159,14 @@ class Handler(BaseHTTPRequestHandler):
             if not 40 <= bpm <= 200:
                 self._send(400, {"error": "bpm must be 40-200"})
                 return
-            self._send(200, progressions.render(pid, key_root, bpm), "audio/wav")
+            timbre = query.get("t", "keys")
+            if timbre not in TIMBRES:
+                self._send(400, {"error": f"unknown timbre: {timbre!r}"})
+                return
+            key = cache_key("prog", pid, key_root, bpm, timbre)
+            data = cached_audio(key, lambda: progressions.render_stereo_bytes(
+                pid, key_root, bpm, timbre=timbre))
+            self._send(200, data, "audio/wav")
             return
         # longest prefix wins, so /fixtures/ is not swallowed by /
         for prefix, base in sorted(STATIC_ROOTS.items(), key=lambda kv: -len(kv[0])):

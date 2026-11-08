@@ -160,6 +160,16 @@
         </select>
       </div>
       <div style="align-self: end;">
+        <label for="tTimbre">voice</label>
+        <select id="tTimbre">
+          <option value="keys">electric piano</option>
+          <option value="guitar">nylon guitar</option>
+          <option value="organ">organ</option>
+          <option value="pad">warm pad</option>
+          <option value="bell">glass bell</option>
+        </select>
+      </div>
+      <div style="align-self: end;">
         <button class="act" id="tPlay" type="button">Play chord</button>
       </div>
     </div>
@@ -260,7 +270,8 @@
   updateTriad();
 
   function playChord(root, quality, dur) {
-    fetch(`/api/chord.wav?root=${root}&quality=${quality}&dur=${dur}`)
+    const t = $("tTimbre") ? $("tTimbre").value : "keys";
+    fetch(`/api/chord.wav?root=${root}&quality=${quality}&dur=${dur}&t=${t}`)
       .then(r => { if (!r.ok) throw new Error("render failed"); return r.arrayBuffer(); })
       .then(buf => {
         if (audio.src.startsWith("blob:")) URL.revokeObjectURL(audio.src);

@@ -8,9 +8,10 @@ need a tuning extension - noted as ceiling, not promised).
 """
 
 from .chords import NOTE_NAMES
-from .synth import render_chord
+from .synth import render_chord, render_chord_stereo
 
-SR = 11025
+SR = 11025          # fixture sample rate (legacy mono path, byte-stable)
+PLAY_SR = 22050     # playback sample rate (new stereo engine)
 BEATS_PER_CHORD = 4
 LOOPS = 2
 
@@ -245,6 +246,44 @@ def render_single(root_pc, quality, dur=1.4, base_midi=48):
     render_chord(buf, midis, 0.05, dur, SR)
     from .synth import samples_to_wav_bytes
     return samples_to_wav_bytes(buf, SR)
+
+
+def render_single_stereo(root_pc, quality, dur=1.4, base_midi=48,
+                         timbre="keys", seed=1):
+    """One chord, new stereo engine - what the app actually plays."""
+    midis = [base_midi + root_pc + iv for iv in QUALITY_INTERVALS[quality]]
+    midis.append(base_midi + root_pc + 12)
+    from .synth import render_stereo, stereo_to_wav_bytes
+    left, right = render_stereo(midis, dur + 0.25, PLAY_SR, timbre=timbre,
+                                 seed=seed)
+    return stereo_to_wav_bytes(left, right, PLAY_SR)
+
+
+def render_stereo(prog_id, key_root=0, bpm=100, loops=LOOPS, timbre="keys"):
+    """A progression rendered with the new stereo engine -> (left, right)."""
+    chord_dur = BEATS_PER_CHORD * 60.0 / bpm
+    lead_in = 0.5
+    total = lead_in + chord_dur * len(PROGRESSIONS[prog_id]["steps"]) * loops + 0.5
+    left = [0.0] * int(total * PLAY_SR)
+    right = [0.0] * int(total * PLAY_SR)
+    chords = chords_for(prog_id, key_root)
+    t = lead_in
+    for loop in range(loops):
+        for ch in chords:
+            render_chord_stereo(left, right, ch["midis"], t, chord_dur - 0.05,
+                                PLAY_SR, timbre, seed=int(t * 1000) + loop * 7919)
+            t += chord_dur
+    from .synth import _reverb, master
+    _reverb(left, right, PLAY_SR)
+    master(left, right, PLAY_SR)
+    return left, right
+
+
+def render_stereo_bytes(prog_id, key_root=0, bpm=100, timbre="keys"):
+    """Progression -> stereo WAV bytes (the app's playback format)."""
+    from .synth import stereo_to_wav_bytes
+    left, right = render_stereo(prog_id, key_root, bpm, timbre=timbre)
+    return stereo_to_wav_bytes(left, right, PLAY_SR)
 
 
 def render(prog_id, key_root=0, bpm=100, loops=LOOPS):
