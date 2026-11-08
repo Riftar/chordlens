@@ -16,6 +16,13 @@ python3 server.py                         # web UI at http://127.0.0.1:8740
 In the UI: drop a 16-bit PCM WAV (or click the demo loop). You get a
 clickable chord timeline, a chromagram heatmap, and synced playback.
 
+Progression playground: `python3 server.py` then open
+`/progressions.html` - named progressions (starting with the Royal
+Road, IV-V-iii-vi, the J-pop staple) rendered in any key and tempo, with
+a "read it back with chordlens" button that feeds the rendered audio
+straight into the detector (unit-gated: the read-back returns exactly
+the progression's chords).
+
 CLI:
 
 ```bash

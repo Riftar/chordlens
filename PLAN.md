@@ -47,6 +47,12 @@ on your machine, in pure Python stdlib plus a dependency-free web client.
    dropzone (all states), /api/analyze POST (32 MB cap, tempfile,
    deleted), chord timeline with click-to-seek, chromagram canvas,
    synced playback, demo loop from /fixtures/.
+4. **Progression playground (shipped, 2026-11-08).** A registry of named,
+   culturally-rooted progressions (Royal Road first) rendered
+   server-side in any key/tempo by the shared synth, with a self-detect
+   loop that is unit-gated (detector must read back the exact chords).
+   Ceiling: Arabic/Javanese/Sundanese progressions slot into the same
+   registry; non-12-TET tunings (pelog/slendro) need a tuning extension.
 
 Ceiling beyond v0.1 (future work, not promised): quality-label accuracy
 on dense mixes; boundary frames are straddled by the 0.74 s FFT window

@@ -17,6 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import wave as wavemod
 
 from chordlens.detect import analyze_detailed
+from chordlens import progressions
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MAX_BODY = 32 * 1024 * 1024  # 32 MB upload cap
@@ -61,6 +62,47 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split("?", 1)[0].split("#", 1)[0]
+        query = {}
+        if "?" in self.path:
+            for pair in self.path.split("?", 1)[1].split("&"):
+                if "=" in pair:
+                    k, v = pair.split("=", 1)
+                    query[k] = v
+        # API branches before static
+        if path == "/api/progressions":
+            key = None
+            if "key" in query:
+                try:
+                    key = int(query["key"]) % 12
+                except ValueError:
+                    self._send(400, {"error": "key must be an integer"})
+                    return
+            body = []
+            for pid, p in progressions.PROGRESSIONS.items():
+                entry = {"id": pid, "name": p["name"], "origin": p["origin"],
+                         "native": p.get("native", ""), "description": p["description"],
+                         "degrees": [s["degree"] for s in p["steps"]]}
+                if key is not None:
+                    entry["chords"] = [c["label"] for c in progressions.chords_for(pid, key)]
+                body.append(entry)
+            self._send(200, body)
+            return
+        if path == "/api/progression.wav":
+            pid = query.get("id", "")
+            if pid not in progressions.PROGRESSIONS:
+                self._send(404, {"error": f"unknown progression: {pid!r}"})
+                return
+            try:
+                key_root = int(query.get("key", 0)) % 12
+                bpm = int(query.get("bpm", 100))
+            except ValueError:
+                self._send(400, {"error": "key and bpm must be integers"})
+                return
+            if not 40 <= bpm <= 200:
+                self._send(400, {"error": "bpm must be 40-200"})
+                return
+            self._send(200, progressions.render(pid, key_root, bpm), "audio/wav")
+            return
         # longest prefix wins, so /fixtures/ is not swallowed by /
         for prefix, base in sorted(STATIC_ROOTS.items(), key=lambda kv: -len(kv[0])):
             if prefix == "/" or path.startswith(prefix):

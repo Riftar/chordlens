@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>chordlens — read the chords in any recording</title>
+<title>chordlens - read the chords in any recording</title>
 <link rel="stylesheet" href="tokens.css">
 <style>
   /* two warm blooms, fixed, quiet — the atmospheric ground */
@@ -41,7 +41,12 @@
     content: ""; display: inline-block; width: 0.55em; height: 0.55em;
     background: var(--color-accent); margin-right: 0.55em; transform: translateY(-0.05em);
   }
+  .nav-links { font-size: var(--text-sm); }
+  .nav-links a { color: var(--color-muted); }
+  .nav-links a:hover { color: var(--color-ink); text-decoration: none; }
   .nav-meta { color: var(--color-muted); font-size: var(--text-sm); white-space: nowrap; }
+
+  @media (max-width: 640px) { .nav-meta { display: none; } }
 
   .wrap { max-width: 62rem; margin: 0 auto; padding: 0 var(--space-lg); }
 
@@ -154,6 +159,7 @@
 <body>
 <nav class="nav">
   <span class="wordmark">chordlens</span>
+  <span class="nav-links"><a href="/">analyze</a> · <a href="/progressions.html">progressions</a></span>
   <span class="nav-meta">v0.1 · offline · zero dependencies</span>
 </nav>
 
@@ -161,7 +167,7 @@
   <section class="hero">
     <h1>Drop a song. Read its chords.</h1>
     <p>A Fourier transform folds your audio into twelve pitch buckets, and the
-    closest chord shape wins. It runs on this machine — <b>no cloud, no model,
+    closest chord shape wins. It runs on this machine. <b>no cloud, no model,
     no upload beyond localhost</b>. Clean recordings read near-perfectly; dense
     mixes keep their roots longer than their qualities.</p>
   </section>
@@ -169,7 +175,7 @@
   <section class="bench" aria-label="chord analysis">
     <div class="drop" id="drop">
       <span class="pick">Choose a WAV</span>
-      <div class="hint">or drop it here — 16-bit PCM, up to 32&nbsp;MB · <a href="/fixtures/clean.wav" id="demo">run the demo loop instead</a></div>
+      <div class="hint">or drop it here - 16-bit PCM, up to 32&nbsp;MB · <a href="/fixtures/clean.wav" id="demo">run the demo loop instead</a></div>
       <input type="file" id="file" accept=".wav,audio/wav" aria-label="Choose a WAV file">
     </div>
     <p class="status" id="status" role="status" aria-live="polite"></p>
@@ -229,15 +235,15 @@
         if (!ok) throw new Error(body.error || `HTTP ${status}`);
         state.data = body;
         render(body);
-        say(`${name} — done. ${body.segments.length} chords found.`);
+        say(`${name} - done. ${body.segments.length} chords found.`);
       })
-      .catch(err => say(`${name}: ${err.message} — convert to 16-bit WAV first (ffmpeg -i song.mp3 song.wav)`, true));
+      .catch(err => say(`${name}: ${err.message} - convert to 16-bit WAV first (ffmpeg -i song.mp3 song.wav)`, true));
   }
 
   function loadFile(f) {
     if (!f) return;
     if (!/wav$/i.test(f.name) && f.type !== "audio/wav") {
-      say(`${f.name}: not a WAV — convert first (ffmpeg -i song.mp3 song.wav)`, true);
+      say(`${f.name}: not a WAV - convert first (ffmpeg -i song.mp3 song.wav)`, true);
       return;
     }
     const reader = new FileReader();
@@ -268,7 +274,7 @@
     const head = document.createElement("div");
     head.className = "playhead"; timeline.appendChild(head);
     drawChroma(body.frames);
-    summary.innerHTML = `<b>${body.segments.length} chords</b> over ${fmt(total)} — brightness = pitch-class energy per frame`;
+    summary.innerHTML = `<b>${body.segments.length} chords</b> over ${fmt(total)} - brightness = pitch-class energy per frame`;
     paintHead();
   }
 

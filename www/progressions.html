@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chordlens - progression playground</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1;
+    background:
+      radial-gradient(38rem 26rem at 82% 8%, oklch(26% 0.055 50 / 0.55), transparent 70%),
+      radial-gradient(34rem 24rem at 12% 88%, oklch(24% 0.045 30 / 0.45), transparent 70%);
+  }
+  * { box-sizing: border-box; }
+  html, body { overflow-x: clip; }
+  body {
+    margin: 0; background: var(--color-paper); color: var(--color-ink);
+    font-family: var(--font-mono); font-size: var(--text-base); line-height: 1.6;
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: var(--color-accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, .prog:focus-visible {
+    outline: 2px solid var(--color-focus); outline-offset: 3px;
+  }
+  .nav {
+    position: sticky; top: 0; z-index: var(--z-nav);
+    display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: oklch(14% 0.008 40 / 0.85); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .wordmark { font-weight: 700; letter-spacing: -0.02em; }
+  .wordmark::before {
+    content: ""; display: inline-block; width: 0.55em; height: 0.55em;
+    background: var(--color-accent); margin-right: 0.55em; transform: translateY(-0.05em);
+  }
+  .nav-links { font-size: var(--text-sm); }
+  .nav-links a { color: var(--color-muted); }
+  .nav-links a[aria-current="page"] { color: var(--color-accent); }
+  .nav-meta { color: var(--color-muted); font-size: var(--text-sm); white-space: nowrap; }
+  @media (max-width: 640px) { .nav-meta { display: none; } }
+
+  .wrap { max-width: 62rem; margin: 0 auto; padding: 0 var(--space-lg); }
+  .hero { padding: var(--space-2xl) 0 var(--space-lg); }
+  .hero h1 {
+    font-size: var(--text-display); font-weight: 700; line-height: 1.05;
+    letter-spacing: -0.03em; margin: 0 0 var(--space-md);
+    max-width: 18ch; overflow-wrap: anywhere; min-width: 0;
+  }
+  .hero p { color: var(--color-muted); max-width: 58ch; margin: 0; }
+  .hero p b { color: var(--color-ink); font-weight: 400; }
+
+  .cards { display: grid; gap: var(--space-md); margin: var(--space-lg) 0; }
+  .prog {
+    text-align: left; font-family: inherit; color: var(--color-ink); cursor: pointer;
+    background: var(--color-paper-2); border: 1px solid var(--color-rule);
+    border-radius: var(--radius); padding: var(--space-md) var(--space-lg);
+    transition: border-color var(--dur-short) var(--ease-out),
+                background-color var(--dur-short) var(--ease-out);
+  }
+  .prog:hover { border-color: var(--color-neutral); }
+  .prog[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-paper-3); }
+  .prog .pname { font-weight: 700; }
+  .prog .porigin { color: var(--color-accent); font-size: var(--text-sm); margin-left: var(--space-sm); }
+  .prog .pdegrees { color: var(--color-ink); margin-top: var(--space-xs); }
+  .prog .pdesc { color: var(--color-muted); font-size: var(--text-sm); margin: var(--space-xs) 0 0; }
+
+  .console {
+    background: var(--color-paper-2); border-radius: var(--radius);
+    padding: var(--space-lg); display: grid; gap: var(--space-lg);
+    margin: var(--space-lg) 0 var(--space-2xl);
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: var(--space-md); align-items: center; }
+  .controls label { color: var(--color-muted); font-size: var(--text-sm); }
+  select, input[type="number"] {
+    font-family: inherit; color: var(--color-ink); background: var(--color-paper-3);
+    border: 1px solid var(--color-rule); border-radius: var(--radius);
+    padding: var(--space-sm) var(--space-md); font-size: var(--text-sm);
+  }
+  input[type="number"] { width: 6ch; }
+  button.act {
+    font-family: inherit; font-size: var(--text-sm); color: var(--color-ink);
+    background: var(--color-paper-3); border: 0; border-radius: var(--radius-pill);
+    padding: var(--space-sm) var(--space-lg); cursor: pointer; white-space: nowrap;
+    transition: background-color var(--dur-short) var(--ease-out), transform 100ms var(--ease-out);
+  }
+  button.act:hover { background: oklch(25% 0.014 40); }
+  button.act:active { transform: translateY(1px); }
+  button.act[disabled] { opacity: 0.45; cursor: wait; }
+  .chords { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+  .chip {
+    background: var(--color-paper-3); border-radius: var(--radius); padding: var(--space-sm) var(--space-md);
+    font-size: var(--text-sm);
+  }
+  .chip .deg { color: var(--color-muted); margin-right: var(--space-sm); }
+  .chip.hit { box-shadow: inset 0 -3px 0 var(--color-accent); }
+  .status { font-size: var(--text-sm); color: var(--color-muted); min-height: 1.6em; margin: 0; }
+  .status.error { color: var(--color-accent); }
+  .reading { display: grid; gap: var(--space-sm); }
+  .reading[hidden] { display: none; }
+  .rtimeline { display: flex; gap: 2px; min-height: 3rem; border-radius: var(--radius); overflow: hidden; }
+  .rseg {
+    background: var(--color-paper-3); display: flex; align-items: center; justify-content: center;
+    font-size: var(--text-sm); white-space: nowrap; overflow: hidden; min-width: 0;
+  }
+  footer { border-top: 1px solid var(--color-rule); margin-top: var(--space-xl);
+           padding: var(--space-xl) 0 var(--space-2xl); }
+  footer .say { font-size: var(--text-md); font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  footer .fine { color: var(--color-muted); font-size: var(--text-sm); margin: var(--space-sm) 0 0; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero, .cards, .console { animation: rise 450ms var(--ease-out) both; }
+    .cards { animation-delay: 60ms; } .console { animation-delay: 120ms; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="wordmark">chordlens</span>
+  <span class="nav-links"><a href="/">analyze</a> · <a href="/progressions.html" aria-current="page">progressions</a></span>
+  <span class="nav-meta">v0.1 · offline · zero dependencies</span>
+</nav>
+
+<div class="wrap">
+  <section class="hero">
+    <h1>Progression playground.</h1>
+    <p>Named chord progressions from around the world, rendered in any key and
+    tempo by the same synth behind the test fixtures. Play one, then have
+    <b>chordlens read it back</b> - the detector should find exactly what you
+    just heard.</p>
+  </section>
+
+  <section class="cards" id="cards" aria-label="progressions"></section>
+
+  <section class="console" aria-label="playground console">
+    <div class="controls">
+      <label for="key">key</label>
+      <select id="key"></select>
+      <label for="bpm">bpm</label>
+      <input type="number" id="bpm" min="40" max="200" value="100">
+      <button class="act" id="play" type="button">Play</button>
+      <button class="act" id="read" type="button">Read with chordlens</button>
+    </div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <div class="chords" id="chords"></div>
+    <div class="reading" id="reading" hidden>
+      <div class="rtimeline" id="rtimeline"></div>
+      <p class="status" id="verdict"></p>
+    </div>
+  </section>
+  <audio id="audio" preload="auto"></audio>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p class="say">Steal progressions, not recordings.</p>
+    <p class="fine">MIT license · Python stdlib only · more progressions land in the same registry</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const cards = $("cards"), keySel = $("key"), bpmIn = $("bpm"),
+        playBtn = $("play"), readBtn = $("read"), statusEl = $("status"),
+        chordsEl = $("chords"), audio = $("audio"),
+        reading = $("reading"), rtimeline = $("rtimeline"), verdict = $("verdict");
+  const state = { progs: [], selected: null, buffer: null };
+
+  NOTES.forEach((n, i) => keySel.add(new Option(n + " major", i)));
+  keySel.value = "0";
+
+  const say = (msg, isErr) => {
+    statusEl.textContent = msg;
+    statusEl.className = "status" + (isErr ? " error" : "");
+  };
+
+  fetch("/api/progressions")
+    .then(r => r.json())
+    .then(list => {
+      state.progs = list;
+      list.forEach(p => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "prog"; b.dataset.id = p.id;
+        b.setAttribute("aria-pressed", "false");
+        b.innerHTML = `<span class="pname">${p.name}</span>` +
+          (p.native ? `<span class="porigin">${p.native}</span>` : "") +
+          `<span class="porigin">${p.origin}</span>` +
+          `<div class="pdegrees">${p.degrees.join(" - ")}</div>` +
+          `<p class="pdesc">${p.description}</p>`;
+        b.addEventListener("click", () => select(p.id));
+        cards.appendChild(b);
+      });
+      if (list.length) select(list[0].id);
+    })
+    .catch(() => say("could not load progressions", true));
+
+  function select(id) {
+    state.selected = id; state.buffer = null;
+    reading.hidden = true;
+    [...cards.children].forEach(el =>
+      el.setAttribute("aria-pressed", String(el.dataset.id === id)));
+    renderChords();
+  }
+
+  // expected chords are computed server-side; the client only asks
+  function renderChords() {
+    if (!state.selected) return;
+    const key = keySel.value;
+    fetch(`/api/progressions?key=${key}`)
+      .then(r => r.json())
+      .then(list => {
+        const p = list.find(x => x.id === state.selected);
+        chordsEl.innerHTML = "";
+        p.chords.forEach((c, i) => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          chip.innerHTML = `<span class="deg">${p.degrees[i]}</span>${c}`;
+          chordsEl.appendChild(chip);
+        });
+      });
+  }
+  keySel.addEventListener("change", renderChords);
+
+  function loadWav() {
+    const q = `/api/progression.wav?id=${state.selected}` +
+              `&key=${keySel.value}&bpm=${bpmIn.value}`;
+    say("rendering...");
+    return fetch(q).then(r => {
+      if (!r.ok) throw new Error(`render failed (HTTP ${r.status})`);
+      return r.arrayBuffer();
+    }).then(buf => {
+      state.buffer = buf;
+      if (audio.src.startsWith("blob:")) URL.revokeObjectURL(audio.src);
+      audio.src = URL.createObjectURL(new Blob([buf], {type: "audio/wav"}));
+      return buf;
+    });
+  }
+
+  playBtn.addEventListener("click", () => {
+    playBtn.disabled = true;
+    loadWav()
+      .then(() => { audio.play(); playBtn.textContent = "Pause"; say(""); })
+      .catch(e => say(e.message, true))
+      .finally(() => { playBtn.disabled = false; });
+  });
+  audio.addEventListener("ended", () => { playBtn.textContent = "Play"; });
+  audio.addEventListener("pause", () => { playBtn.textContent = "Play"; });
+
+  readBtn.addEventListener("click", () => {
+    readBtn.disabled = true;
+    const ready = state.buffer ? Promise.resolve(state.buffer) : loadWav();
+    ready.then(buf => {
+      say("reading with chordlens...");
+      return fetch("/api/analyze", {method: "POST", body: buf});
+    })
+      .then(r => r.json())
+      .then(body => {
+        rtimeline.innerHTML = "";
+        body.segments.forEach(s => {
+          const el = document.createElement("div");
+          el.className = "rseg"; el.textContent = s.chord;
+          el.style.flexGrow = String(Math.max(s.end - s.start, 0.25));
+          rtimeline.appendChild(el);
+        });
+        reading.hidden = false;
+        const expected = [...chordsEl.querySelectorAll(".chip")].length;
+        verdict.textContent = `${body.segments.length} segments found (progression loops ${expected} chords per pass)`;
+        say("");
+      })
+      .catch(e => say(e.message, true))
+      .finally(() => { readBtn.disabled = false; });
+  });
+
+  window.chordlens = { get state() {
+    return {selected: state.selected, haveWav: !!state.buffer,
+            segs: rtimeline.children.length}; } };
+})();
+</script>
+</body>
+</html>

@@ -9,11 +9,11 @@ Run:  python3 fixtures/gen_fixtures.py
 import json
 import math
 import os
-import struct
 import sys
-import wave
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from chordlens.synth import midi_hz, render_chord, write_wav  # noqa: E402
 
 SR = 11025
 
@@ -25,28 +25,6 @@ def rnd():
     global _seed
     _seed = (1103515245 * _seed + 12345) % (1 << 31)
     return _seed / (1 << 31)
-
-
-def midi_hz(m):
-    return 440.0 * 2.0 ** ((m - 69) / 12.0)
-
-
-def render_chord(buffer_, midis, start_s, dur_s, partial_amps=(1.0, 0.55, 0.3, 0.18, 0.1)):
-    """Additive synth: each note gets decaying harmonics + slow tremolo."""
-    n0 = int(start_s * SR)
-    n1 = int((start_s + dur_s) * SR)
-    for m in midis:
-        f0 = midi_hz(m)
-        for pi_, amp in enumerate(partial_amps, start=1):
-            f = f0 * pi_
-            if f > SR / 2 - 100:
-                break
-            w = 2.0 * math.pi * f / SR
-            trem = 0.9 + 0.1 * math.sin(2.0 * math.pi * 4.1 * (n0 / SR))
-            for i in range(n0, n1):
-                t = (i - n0) / SR
-                env = min(1.0, t * 50.0) * math.exp(-t * 0.8)
-                buffer_[i] += amp * env * trem * math.sin(w * i)
 
 
 def add_drums(buffer_, start_s, dur_s):
@@ -61,16 +39,6 @@ def add_drums(buffer_, start_s, dur_s):
             t = j / SR
             buffer_[i + j] += level * math.exp(-t * 60.0) * (rnd() * 2.0 - 1.0)
         i += int(0.5 * SR)
-
-
-def write_wav(path, samples):
-    peak = max(abs(s) for s in samples) or 1.0
-    scaled = [max(-1.0, min(1.0, s / peak * 0.85)) for s in samples]
-    with wave.open(path, "wb") as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(SR)
-        w.writeframes(b"".join(struct.pack("<h", int(s * 32767)) for s in scaled))
 
 
 QUALITY_INTERVALS = {
